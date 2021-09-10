@@ -551,7 +551,7 @@ double GetRunTime(void)
 */
 void GiveUsage(char *s)
 {
-   fprintf(stderr,"Usage: %s [options] frame1name frame2name\n",s);
+   fprintf(stderr,"Usage: %s [options] track0filename track5filename\n",s);
    fprintf(stderr,"Options\n");
    fprintf(stderr,"   -w n      sets the output image width, default: %d\n",params.outwidth);
    fprintf(stderr,"   -a n      sets antialiasing level, default = %d\n",params.antialias);
