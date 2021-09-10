@@ -48,3 +48,7 @@ This script has currently been tested with the following cameras and modes:
 Join our Discord community and get in direct contact with the Trek View team, and the wider Trek View community.
 
 [Join the Trek View Discord server](https://discord.gg/ZVk7h9hCfw).
+
+## License
+
+The code of this site is licensed under an [AGPL v3 License](/LICENSE).
