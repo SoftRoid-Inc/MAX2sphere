@@ -1,6 +1,6 @@
 # MAX2Sphere
 
-Takes raw GoPro .360 frames (with GoPro EAC projection) and converts them to a more widely recognised equirectangular projection.
+Takes raw GoPro .360 frames (two strips of cube map projections encoded as EAC) and converts them to a more widely recognised equirectangular projection.
 
 ## Installation
 
