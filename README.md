@@ -18,6 +18,7 @@ You can use ffmpeg to split your `.360` video into frames (below at a rate of 1 
 ```
 $ ffmpeg -i GS070135.360 -map 0:0 -r 1 track0/img%d.jpg -map 0:5 -r 1 track5/img%d.jpg
 ```
+
 ### Script
 
 ```
@@ -31,6 +32,11 @@ Options:
 * -o s specify the output filename, default is based on track0 name
 * -d enable debug mode, default: off
 
+### Metadata
+
+Note, the resulting image frames will not have any metadata -- this is not covered by the script.
+
+[These docs explain what metadata should be added](https://guides.trekview.org/explorer/developer-docs/sequence-functions/process#videos-360s).
 
 ### Camera support
 
