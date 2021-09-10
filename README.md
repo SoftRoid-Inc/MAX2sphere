@@ -15,7 +15,7 @@ This script is designed to be used with frames. You will need to first convert a
 You can use ffmpeg to split your `.360` video into frames (below at a rate of 1 FPS).
 
 ```
-$ ffmpeg -i GS070135.360 -map 0:0 -r 1 track0/img%d.jpg -map 0:5 -r 1 track5/img%d.jpg
+$ ffmpeg -i INPUT.360 -map 0:0 -r 1 track0/img%d.jpg -map 0:5 -r 1 track5/img%d.jpg
 ```
 
 ### Script
