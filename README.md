@@ -4,7 +4,7 @@ Takes raw GoPro .360 frames (with GoPro EAC projection) and converts them to a m
 
 ## Installation
 
-The MAX2sphere command line utility should build out of the box on Linux as long as the standard jpeg library is installed, the lib and includ files should be on the gcc build path. The same applies to MacOS except Xcode and command line tools need to be installed.
+The MAX2sphere command line utility should build out of the box on Linux using the simple Makefile provided. The only external dependency is the standard jpeg library (libjpeg), the lib and include directories need to be on the gcc build path. The same applies to MacOS except Xcode and command line tools need to be installed.
 
 ## Usage
 
