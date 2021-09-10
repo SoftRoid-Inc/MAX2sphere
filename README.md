@@ -10,7 +10,7 @@ The MAX2sphere command line utility should build out of the box on Linux using t
 
 ### Preperation
 
-This script is designed to be used with frames. You will need to first convert a `.360` video to frames and then pass the two corresponding frames to the script.
+This script is designed to be used with frames. You will need to first convert a `.360` video to frames and then pass the two corresponding frames to the script ([2 frames as .360's use 2 video tracks](https://www.trekview.org/blog/2021/reverse-engineering-gopro-360-file-format-part-1/)).
 
 You can use ffmpeg to split your `.360` video into frames (below at a rate of 1 FPS).
 
