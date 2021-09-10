@@ -21,7 +21,7 @@ $ ffmpeg -i GS070135.360 -map 0:0 -r 1 track0/img%d.jpg -map 0:5 -r 1 track5/img
 ### Script
 
 ```
-$ MAX2sphere [options] frame1name frame2name
+$ MAX2sphere [options] track0filename track5filename
 ```
 
 Options:
