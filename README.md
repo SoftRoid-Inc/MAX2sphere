@@ -6,6 +6,12 @@ Takes raw GoPro .360 frames (two strips of cube map projections encoded as EAC) 
 
 The MAX2sphere command line utility should build out of the box on Linux using the simple Makefile provided. The only external dependency is the standard jpeg library (libjpeg), the lib and include directories need to be on the gcc build path. The same applies to MacOS except Xcode and command line tools need to be installed.
 
+```
+$ git clone https://github.com/trek-view/MAX2sphere
+$ make -f Makefile
+$ @SYSTEM_PATH/MAX2sphere
+```
+
 ## Usage
 
 ### Preperation
@@ -26,10 +32,24 @@ $ MAX2sphere [options] track0filename track5filename
 
 Options:
 
-* -w n sets the output image width, default: 4096
+* -w n sets the output image width, default: 4096 (for 5.6k)
 * -a n sets antialiasing level, default = 2
 * -o s specify the output filename, default is based on track0 name
 * -d enable debug mode, default: off
+
+#### Examples (MacOS)
+
+##### Use a GoPro Max 3K video (width = 2272)
+
+```
+$ @SYSTEM_PATH/MAX2sphere -w 2272 testframes/track0_0010.jpg testframes/track5_0010.jpg
+```
+
+##### Use a custom output filename (name = davids-sphere)
+
+```
+$ @SYSTEM_PATH/MAX2sphere -o "output/davids-demo-sphere.jpg" testframes/track0_dirt.jpg testframes/track5_dirt.jpg
+```
 
 ### Metadata
 
@@ -56,4 +76,4 @@ Join our Discord community and get in direct contact with the Trek View team, an
 
 ## License
 
-The code of this site is licensed under an [AGPL v3 License](/LICENSE).
+The code of this site is licensed under an [MIT License](/LICENSE).
