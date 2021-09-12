@@ -32,7 +32,7 @@ $ MAX2sphere [options] track0filename track5filename
 
 Options:
 
-* -w n sets the output image width, default: 4096 (for 5.6k)
+* -w n sets the output image width, default: 5376 (for 5.6k)
 * -a n sets antialiasing level, default = 2
 * -o s specify the output filename, default is based on track0 name
 * -d enable debug mode, default: off
