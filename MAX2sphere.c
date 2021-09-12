@@ -11,7 +11,7 @@ PARAMS params;
 // These are known frame templates
 // The appropaite one to use will be auto detected, error is none match
 #define NTEMPLATE 2
-FRAMESPECS template[NTEMPLATE] = {{4096,1344,1376,1344,32},{2272,736,768,736,16}};
+FRAMESPECS template[NTEMPLATE] = {{4096,1344,1376,1344,32,5376},{2272,736,768,736,16,2944}};
 int whichtemplate = -1;    // Which frame template do we thnk we have
 
 int main(int argc,char **argv)
@@ -63,6 +63,10 @@ int main(int argc,char **argv)
    // Malloc images
 	frame1 = Create_Bitmap(params.framewidth,params.frameheight);
 	frame2 = Create_Bitmap(params.framewidth,params.frameheight);
+	if (params.outwidth < 0) {
+		params.outwidth = template[whichtemplate].equiwidth;
+   	params.outheight = params.outwidth / 2;
+	}
 	spherical = Create_Bitmap(params.outwidth,params.outheight);
    if (frame1 == NULL || frame2 == NULL || spherical == NULL) {
       fprintf(stderr,"%s() - Failed to malloc memory for the images\n",argv[0]);
@@ -490,8 +494,8 @@ void RotateUV90(UV *uv)
 */
 void Init(void)
 {
-   params.outwidth = 4096;
-   params.outheight = 2048;
+   params.outwidth = -1;
+   params.outheight = -1;
    params.framewidth = -1;
    params.frameheight = -1;
    params.antialias = 2;

@@ -40,6 +40,7 @@ typedef struct {
    int sidewidth;
    int centerwidth;
    int blendwidth;
+	int equiwidth;
 } FRAMESPECS;
 
 // Prototypes
