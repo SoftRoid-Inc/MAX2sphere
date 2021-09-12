@@ -14,7 +14,7 @@ $ @SYSTEM_PATH/MAX2sphere
 
 ## Usage
 
-### Preperation
+### Preparation
 
 This script is designed to be used with frames. You will need to first convert a `.360` video to frames and then pass the two corresponding frames to the script ([2 frames as .360's use 2 video tracks](https://www.trekview.org/blog/2021/reverse-engineering-gopro-360-file-format-part-1/)).
 
