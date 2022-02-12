@@ -163,7 +163,7 @@ int main(int argc, char **argv)
    sec = t_end.tv_sec - t_start.tv_sec;
    nsec = t_end.tv_nsec - t_start.tv_nsec;
    duration_time = (double)sec + (double)nsec / 1e9;
-   printf("Input I/O: %f s\n", duration_time);
+   // printf("Input I/O: %f s\n", duration_time);
    time_input_io = duration_time;
 
    // Form the spherical map
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
    sec = t_end.tv_sec - t_start.tv_sec;
    nsec = t_end.tv_nsec - t_start.tv_nsec;
    duration_time = (double)sec + (double)nsec / 1e9;
-   printf("Convert:   %f s\n", duration_time);
+   // printf("Convert:   %f s\n", duration_time);
    time_convert = duration_time;
 
    // Write out the equirectangular
@@ -233,7 +233,7 @@ int main(int argc, char **argv)
    sec = t_end.tv_sec - t_start.tv_sec;
    nsec = t_end.tv_nsec - t_start.tv_nsec;
    duration_time = (double)sec + (double)nsec / 1e9;
-   printf("Output I/O %f s\n", duration_time);
+   // printf("Output I/O %f s\n", duration_time);
    time_output_io = duration_time;
 
    // export processing time
