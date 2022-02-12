@@ -70,7 +70,7 @@ int main(int argc, char **argv)
    // prepare for output
    char outfilepath[1024] = {'\0'};
    strcat(outfilepath, filedir);
-   strcat(outfilepath, "../MAX2spere_processing_time.csv");
+   strcat(outfilepath, "../MAX2sphere_processing_time.csv");
    // printf("%s\n", outfilepath);
 
    FILE *fp;
