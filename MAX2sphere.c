@@ -148,10 +148,10 @@ int CheckFrames(char *fname1,char *fname2,int *width,int *height)
 	int w1,h1,w2,h2,depth;
 	FILE *fptr;
 
-   if (!IsJPEG(fname1) || !IsJPEG(fname2)) {
-      fprintf(stderr,"CheckFrames() - frame name does not look like a jpeg file\n");
-      return(-1);
-   }
+   // if (!IsJPEG(fname1) || !IsJPEG(fname2)) {
+   //    fprintf(stderr,"CheckFrames() - frame name does not look like a jpeg file\n");
+   //    return(-1);
+   // }
 
    // Frame 1
    if ((fptr = fopen(fname1,"rb")) == NULL) {
