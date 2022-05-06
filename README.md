@@ -77,3 +77,4 @@ Join our Discord community and get in direct contact with the Trek View team, an
 ## License
 
 The code of this site is licensed under an [MIT License](/LICENSE).
+
