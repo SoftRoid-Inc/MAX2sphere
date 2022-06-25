@@ -89,7 +89,8 @@ int main(int argc,char **argv)
 //    const int FH = params.frameheight;
 //    const int FW = params.framewidth;
 //    FUV arr[FH][FW];
-   static FUV arr[2688][5376];
+   // static FUV arr[2688][5376];
+   static FUV arr[2688][5376][4];
 //    FUV arr_read[FH][FW];
 //    fread(arr_read, sizeof(FUV), 3*3, fpread);
    for (j = 0; j < params.outheight; j++)
@@ -120,10 +121,10 @@ int main(int argc,char **argv)
 
                     // Sum over the supersampling set
 
-                    
-                    arr[j][i].u = uv.u;
-                    arr[j][i].v = uv.v;
-                    arr[j][i].face = face;
+                    int antinum = ai * params.antialias + aj;
+                    arr[j][i][antinum].u = uv.u;
+                    arr[j][i][antinum].v = uv.v;
+                    arr[j][i][antinum].face = face;
                     // printf("%lf\n", arr[j][i].u);
 
                     //    else{
@@ -148,7 +149,7 @@ int main(int argc,char **argv)
    }
    stoptime = GetRunTime();
    FILE *fp = fopen( "precalc.bin", "wb" );
-   fwrite(arr, sizeof(FUV), 2688*5376, fp);
+   fwrite(arr, sizeof(FUV), 2688*5376*4, fp);
    fclose(fp);
    if (params.debug)
        fprintf(stderr, "%s() - Processing time: %g seconds\n", argv[0], stoptime - starttime);

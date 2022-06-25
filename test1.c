@@ -7,6 +7,7 @@ typedef struct {
 } FUV;
 int main()
 {
+    
     static FUV t[2688][5376];
     FILE *fp = fopen( "filename.bin", "wb" );
     for (int i = 0; i < 2688;++i){
@@ -18,9 +19,9 @@ int main()
     }
     fwrite(t, sizeof(FUV), 2688*5376, fp);
     fclose(fp);
-    // FILE *fpread = fopen( "filename.bin", "rb" );
-    // FUV a[2688][5376];
-    // fread(a, sizeof(FUV), 2688*5376, fpread);
+    FILE *fpread = fopen( "filename.bin", "rb" );
+    static FUV a[2688][5376];
+    fread(a, sizeof(FUV), 2688*5376, fpread);
     // printf("%d\n", a[2][2].face);
     // printf("%lf\n", a[2][1].u);
     // printf("%lf\n", a[0][0].v);
