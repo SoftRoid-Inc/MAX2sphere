@@ -32,7 +32,8 @@ typedef struct {
    PLANE faces[6];
 	char outfilename[256];
    int debug;
-   int read;
+   char read[256];
+   int memorize;
 } PARAMS;
 typedef struct {
    int face;

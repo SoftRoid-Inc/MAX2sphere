@@ -11,6 +11,8 @@ PARAMS params;
 // These are known frame templates
 // The appropaite one to use will be auto detected, error is none match
 #define NTEMPLATE 2
+// #define TABLEPATH "./precalc.bin"
+
 FRAMESPECS template[NTEMPLATE] = {{4096, 1344, 1376, 1344, 32, 5376},
                                   {2272, 736, 768, 736, 16, 2944}};
 int whichtemplate = -1;  // Which frame template do we thnk we have
@@ -47,7 +49,9 @@ int main(int argc, char **argv) {
         } else if (strcmp(argv[i], "-d") == 0) {
             params.debug = TRUE;
         } else if (strcmp(argv[i], "-r") == 0) {
-            params.read = TRUE;
+            strcpy(params.read, argv[i + 1]);
+        } else if (strcmp(argv[i], "-m") == 0){
+            params.memorize = TRUE;
         }
     }
     // Check the input images, determine which frame template we have
@@ -94,18 +98,22 @@ int main(int argc, char **argv) {
 
     // テーブルの読み込み
     FILE *fpread;
-    if ((fpread = fopen("precalc.bin", "rb")) == NULL) {
-        fprintf(stderr,
-                "CheckPrecalculationFile() - Failed to open binfile \"%s\"\n",
-                "precalc.bin");
-        return (-1);
+    if(strlen(params.read)>0){
+        if ((fpread = fopen(params.read, "rb")) == NULL)
+        {
+            fprintf(stderr,
+                    "CheckPrecalculationFile() - Failed to open binfile \"%s\"\n",
+                    params.read);
+            return (-1);
+        }
+        else if (fread(arr_read, sizeof(FUV), 2688 * 5376 * 4, fpread) < 2688 * 5376 * 4)
+        {
+            fprintf(stderr,
+                    "binfile is broken() - mismatch size \n");
+            return (-1);
+        }
     }
-    if (fread(arr_read, sizeof(FUV), 2688 * 5376 * 4, fpread)<2688*5376*4){
-        fprintf(stderr,
-                "binfile is broken() - mismatch size \n");
-        return (-1);
-    }
-
+    
     for (j = 0; j < params.outheight; j++) {
         if (params.debug && j % (params.outheight / 32) == 0)
             fprintf(stderr, "%s() - Scan line %d\n", argv[0], j);
@@ -121,17 +129,20 @@ int main(int argc, char **argv) {
                     y = (j + aj / (double)params.antialias) /
                             (double)params.outheight -
                         0.5;  // -0.5 ... 0.5
-                    if(!params.read){
+                    int antinum = ai * params.antialias + aj;
+                    if(strlen(params.read)==0){
                         longitude = x * TWOPI - M_PI;  // -pi ... pi
                         latitude = y * M_PI;           // -pi/2 ... pi/2
                         if ((face = FindFaceUV(longitude, latitude, &uv)) < 0)
                             continue;
                         // テーブルを作成するためのコード
-                        // arr[j][i][antinum].u = uv.u;
-                        // arr[j][i][antinum].v = uv.v;
-                        // arr[j][i][antinum].face = face;
+                        if(params.memorize){
+                            arr_read[j][i][antinum].u = uv.u;
+                            arr_read[j][i][antinum].v = uv.v;
+                            arr_read[j][i][antinum].face = face;
+                        }
+                        
                     }else{
-                        int antinum = ai * params.antialias + aj;
                         face = arr_read[j][i][antinum].face;
                         uv.u = (double)arr_read[j][i][antinum].u;
                         uv.v = (double)arr_read[j][i][antinum].v;
@@ -142,10 +153,6 @@ int main(int argc, char **argv) {
                     csum.b += c.b;
                 }
             }
-            if (params.debug && j == (params.outheight - 1) && i == (params.outwidth - 1)){
-                printf("%d %d %d\n", csum.r, csum.g, csum.b);
-            }
-
             // Finally update the spherical image
             index = j * params.outwidth + i;
             spherical[index].r = csum.r / params.antialias2;
@@ -154,10 +161,13 @@ int main(int argc, char **argv) {
         }
     }
     stoptime = GetRunTime();
-    // テーブルを作成するためのコード
-    // FILE *fp = fopen("precalc.bin", "wb");
-    // fwrite(arr, sizeof(FUV), 2688 * 5376 * 4, fp);
-    // fclose(fp);
+    if(params.memorize){
+        fprintf(stderr, "%s() - Writing Pre-calculation table\n", argv[0]);
+        FILE *fp = fopen("newprecalc.bin", "wb");
+        fwrite(arr_read, sizeof(FUV), 2688 * 5376 * 4, fp);
+        fclose(fp);
+    }
+    
     if (params.debug)
         fprintf(stderr, "%s() - Processing time: %g seconds\n", argv[0],
                 stoptime - starttime);
@@ -171,7 +181,7 @@ int main(int argc, char **argv) {
     if (params.debug)
         fprintf(stderr, "%s() - Overall time: %g seconds\n", argv[0],
                 stoptime1 - starttime1);
-    if (params.read) fclose(fpread);
+    if (strlen(params.read)>0) fclose(fpread);
     exit(0);
 }
 
@@ -439,7 +449,6 @@ BITMAP4 GetColour(int face, UV uv, BITMAP4 *frame1, BITMAP4 *frame2) {
             w = template[whichtemplate].centerwidth;
             ix = x0 + uv.u * w;
             iy = uv.v * template[whichtemplate].height;
-            // printf("%d %d\n",ix,iy);
             index = iy * template[whichtemplate].width + ix;
             c = (face == FRONT) ? frame1[index] : frame2[index];
             break;
@@ -605,6 +614,7 @@ void GiveUsage(char *s) {
             "   -o s      specify the output filename, default is based on "
             "track0 name\n");
     fprintf(stderr, "   -d        enable debug mode, default: off\n");
-    fprintf(stderr, "   -r        enable read pre-calculation mode, default: off\n");
+    fprintf(stderr, "   -r        enable read pre-calculation mode and specify table path\n");
+    fprintf(stderr, "   -m        memorize calculation mode, default: off\n");
     exit(-1);
 }

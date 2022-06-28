@@ -10,7 +10,7 @@ OBJS_precalc = MAX2sphere_precalc.o bitmaplib.o
 all: MAX2sphere_precalc
 
 MAX2sphere_precalc: $(OBJS_precalc)
-	$(CC) $(INCLUDES) $(CFLAGS) -o MAX2spherev3 $(OBJS_precalc) $(LFLAGS) $(LIBS)
+	$(CC) $(INCLUDES) $(CFLAGS) -o MAX2sphere_precalc $(OBJS_precalc) $(LFLAGS) $(LIBS)
 
 MAX2sphere_precalc.o: MAX2sphere_precalc.c MAX2sphere.h
 	$(CC) $(INCLUDES) $(CFLAGS) -c MAX2sphere_precalc.c
