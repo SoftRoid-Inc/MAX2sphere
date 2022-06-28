@@ -148,7 +148,8 @@ int main(int argc,char **argv)
        }
    }
    stoptime = GetRunTime();
-   FILE *fp = fopen( "precalc.bin", "wb" );
+   // FILE *fp = fopen( "precalc.bin", "wb" );
+   FILE *fp = fopen("precalctxt.txt", "w");
    fwrite(arr, sizeof(FUV), 2688*5376*4, fp);
    fclose(fp);
    if (params.debug)
@@ -427,6 +428,7 @@ BITMAP4 GetColour(int face,UV uv,BITMAP4 *frame1,BITMAP4 *frame2)
 		w = template[whichtemplate].centerwidth;
 		ix = x0 + uv.u * w;
 		iy = uv.v * template[whichtemplate].height;
+      printf("%d%d\n",ix,iy);
 		index = iy * template[whichtemplate].width + ix;
 		c = (face == FRONT) ? frame1[index] : frame2[index];
 		break;

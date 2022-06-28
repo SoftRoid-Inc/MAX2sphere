@@ -7,3 +7,6 @@ test/
 .vscode
 # OS or Editor folders
 .DS_Store
+images/
+testframes/track0
+testframes/track5

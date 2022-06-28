@@ -102,16 +102,26 @@ int main(int argc,char **argv)
                // Find face and u,v coordinates given the longitude and latitude
                if ((face = FindFaceUV(longitude,latitude,&uv)) < 0)
                   continue;
-
+               
                // Sum over the supersampling set 
-					c = GetColour(face,uv,frame1,frame2);
-					csum.r += c.r;
+					// c = GetColour(face,uv,frame1,frame2);
+               c = GetColour(face, uv, frame1, frame2);
+               if (params.debug && j == (2688 - 690) && i == (2636))
+               {
+                  
+                  printf("%d %lf %lf\n", face, uv.u, uv.v);
+                  printf("%hhu %hhu %hhu\n", c.r, c.g, c.b);
+               }
+               
+               csum.r += c.r;
                csum.g += c.g;
                csum.b += c.b;
             }
          }
-
-         // Finally update the spherical image
+         if (params.debug && j == (params.outheight - 1) && i == (params.outwidth - 1))
+         {
+            printf("%d %d %d\n", csum.r, csum.g, csum.b);
+         } // Finally update the spherical image
          index = j * params.outwidth + i; 
          spherical[index].r = csum.r / params.antialias2;
          spherical[index].g = csum.g / params.antialias2;
@@ -218,6 +228,8 @@ int WriteSpherical(char *basename,BITMAP4 *img,int w,int h)
 	}
 
 	// Save
+   if (params.debug)
+      printf("%s\n",fname);
    if ((fptr = fopen(fname,"wb")) == NULL) {
       fprintf(stderr,"WriteSpherical() - Failed to open output file \"%s\"\n",fname);
       return(FALSE);
@@ -397,7 +409,8 @@ BITMAP4 GetColour(int face,UV uv,BITMAP4 *frame1,BITMAP4 *frame2)
 		ix = x0 + uv.u * w;
 		iy = uv.v * template[whichtemplate].height;
 		index = iy * template[whichtemplate].width + ix;
-		c = (face == FRONT) ? frame1[index] : frame2[index];
+      // printf("%d %d\n", ix, iy);
+      c = (face == FRONT) ? frame1[index] : frame2[index];
 		break;
    case LEFT:
 	case DOWN:
