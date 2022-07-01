@@ -5,5 +5,5 @@ _site
 # OS or Editor folders
 .DS_Store
 images/
-testframes/
+test/
 *.bin
