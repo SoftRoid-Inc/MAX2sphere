@@ -13,7 +13,11 @@ make -f Makefile
 ```
 実行
 ```
-$ MAX2sphere_precalc -r テーブルファイルのパス -o 出力ファイルのパス track0ファイルのパス track5ファイルのパス
+MAX2sphere_precalc -r テーブルファイルのパス -o 出力ファイルのパス track0ファイルのパス track5ファイルのパス
+```
+pythonでコマンドを叩く場合の例
+```
+command = f"./MAX2sphere_precalc -r './precalc.bin' -o {output_filepath} {track0_image_path} {track5_image_path}"
 ```
 追加したオプション
 - -r テーブルファイルのパス：前計算したテーブルを読む場合に使う
