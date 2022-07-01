@@ -1,7 +1,23 @@
 # MAX2Sphere
 
 Takes raw GoPro .360 frames (two strips of cube map projections encoded as EAC) and converts them to a more widely recognised equirectangular projection.
-
+## 高速化の変更点
+1. MAX2sphere_precalc.cの追加
+2. MAX2sphere.hの変更
+3. Makefileの変更
+## 使い方
+ビルド
+下記コマンドでビルドされるのは**MAX2sphere_precalc**に変更されているので注意
+```
+make -f Makefile
+```
+実行
+```
+$ MAX2sphere_precalc -r テーブルファイルのパス -o 出力ファイルのパス track0ファイルのパス track5ファイルのパス
+```
+追加したオプション
+- -r テーブルファイルのパス：前計算したテーブルを使用する場合に使う
+- -m ：計算した対応関係を新たに記録する(off推奨.default off)
 ## Installation
 
 The MAX2sphere command line utility should build out of the box on Linux using the simple Makefile provided. The only external dependency is the standard jpeg library (libjpeg), the lib and include directories need to be on the gcc build path. The same applies to MacOS except Xcode and command line tools need to be installed.
