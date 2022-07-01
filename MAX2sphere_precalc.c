@@ -112,6 +112,7 @@ int main(int argc, char **argv) {
                     "binfile is broken() - mismatch size \n");
             return (-1);
         }
+        fclose(fpread);
     }
     
     for (j = 0; j < params.outheight; j++) {
@@ -181,7 +182,7 @@ int main(int argc, char **argv) {
     if (params.debug)
         fprintf(stderr, "%s() - Overall time: %g seconds\n", argv[0],
                 stoptime1 - starttime1);
-    if (strlen(params.read)>0) fclose(fpread);
+    
     exit(0);
 }
 

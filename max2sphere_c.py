@@ -60,7 +60,8 @@ class MAX2sphereC(object):
             idx = track0_fname_wo_ext.split("_")[-1]
 
             output_filepath = f"{self.output_image_dir}/er_frmame_{idx}.jpg"
-            command = f"./MAX2sphere -o {output_filepath} {track0_image_path} {track5_image_path}"# https://github.com/SoftRoid-Inc/MAX2sphere/blob/main/MAX2sphere.c#L562
+            # command = f"./MAX2sphere -o {output_filepath} {track0_image_path} {track5_image_path}"# https://github.com/SoftRoid-Inc/MAX2sphere/blob/main/MAX2sphere.c#L562
+            command = f"./MAX2sphere -r './precalc.bin' -o {output_filepath} {track0_image_path} {track5_image_path}"# https://github.com/SoftRoid-Inc/MAX2sphere/blob/main/MAX2sphere.c#L562
 
             # command = f"{MAX2SPHERE_PATH}/MAX2sphere -o {output_filepath} {track0_image_path} {track5_image_path}"# https://github.com/SoftRoid-Inc/MAX2sphere/blob/main/MAX2sphere.c#L562
             # command = f"{MAX2SPHERE_PATH}/MAX2sphere {track0_image_path} {track5_image_path}" # https://github.com/SoftRoid-Inc/MAX2sphere/blob/main/MAX2sphere.c#L562

@@ -28,3 +28,8 @@ MAX2sphere: $(OBJS)
 MAX2sphere.o: MAX2sphere.c MAX2sphere.h
 	$(CC) $(INCLUDES) $(CFLAGS) -c MAX2sphere.c
 
+debug1:
+	./MAX2sphere_precalc -d -r ./precalc.bin -o ./test.jpg ./test/1.jpg ./test/2.jpg
+debug2:
+	./MAX2sphere_precalc -d -o ./test.jpg ./test/1.jpg ./test/2.jpg
+
