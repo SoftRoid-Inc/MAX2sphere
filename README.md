@@ -6,7 +6,7 @@ Takes raw GoPro .360 frames (two strips of cube map projections encoded as EAC) 
 2. MAX2sphere.hの変更
 3. Makefileの変更
 ## 使い方
-ビルド
+ビルド\
 下記コマンドでビルドされるのは**MAX2sphere_precalc**に変更されているので注意
 ```
 make -f Makefile
