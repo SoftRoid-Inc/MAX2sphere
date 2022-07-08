@@ -37,7 +37,7 @@ typedef struct {
 } PARAMS;
 typedef struct {
    int face;
-   float u, v;
+   double u, v;
 } FUV;
 
 typedef struct
