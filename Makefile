@@ -27,3 +27,4 @@ MAX2sphere: $(OBJS)
 
 MAX2sphere.o: MAX2sphere.c MAX2sphere.h
 	$(CC) $(INCLUDES) $(CFLAGS) -c MAX2sphere.c
+
