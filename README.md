@@ -5,6 +5,18 @@ Takes raw GoPro .360 frames (two strips of cube map projections encoded as EAC) 
 ・MAX2sphere_precalc.cの追加
 ・MAX2sphere.hの変更
 ・Makefileの変更
+## 仕様変更
+ER画像と.360画像の画素位置の対応関係を前計算する方式に変更。
+### 前計算テーブルについて
+関数FindFaceUVを用いて、ER画像の各画素(i,j)に対して.360ファイルの面と位置(f,u,v)が計算される。
+このときアンチエイリアス処理が行われるため、実際には各(i,j)に対して(f,u,v)が4セット求められる。
+したがって、H×WサイズのER画像においてはH×W×4×3(f,u,v)の値を前計算テーブルに保存している。
+尚fuvはMAX2sphrere.hで定義したデータ構造FUVで記述されている。
+### MAX2sphere_precalc内の主な変更点
+93行目 ~ 116行目：前計算テーブルの読み込み(-rオプション)
+140行目 ~ 144行目：前計算テーブルの作成(-mオプション)
+146行目 ~ 150行目：前計算テーブルの値を利用(-rオプション)
+165行目 ~ 170行目：前計算テーブルの出力(-mオプション) 
 ## 使い方
 1. ビルド\
 下記コマンドでビルドされるのは**MAX2sphere_precalc**に変更されているので注意
@@ -13,20 +25,20 @@ make -f Makefile
 ```
 2. 実行
 ```
-MAX2sphere_precalc -r テーブルファイルのパス -o 出力ファイルのパス track0ファイルのパス track5ファイルのパス
+./MAX2sphere_precalc -r テーブルファイルのパス -o 出力ファイルのパス track0ファイルのパス track5ファイルのパス
 ```
 3. (補足) pythonでコマンドを叩く場合の例
 ```
 command = f"./MAX2sphere_precalc -r './precalc.bin' -o {output_filepath} {track0_image_path} {track5_image_path}"
 ```
-##オプション
+## オプション
 追加したオプション
 - -r テーブルファイルのパス：前計算したテーブルを読む場合に使う
 - -m ：計算した対応関係を新たに記録する場合に使う(off推奨.default off)
 
 前計算テーブルの作成
 ```
-MAX2sphere_precalc -m -o 出力ファイルのパス track0ファイルのパス track5ファイルのパス
+./MAX2sphere_precalc -m -o 出力ファイルのパス track0ファイルのパス track5ファイルのパス
 ```
 ## Installation
 
