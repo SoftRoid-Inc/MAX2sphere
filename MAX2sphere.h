@@ -13,7 +13,6 @@
 #define DOWN   5
 
 #define NEARLYONE 0.9999
-
 typedef struct {
    double x,y,z;
 } XYZ;
@@ -33,9 +32,16 @@ typedef struct {
    PLANE faces[6];
 	char outfilename[256];
    int debug;
+   char read[256];
+   int memorize;
 } PARAMS;
-
 typedef struct {
+   int face;
+   double u, v;
+} FUV;
+
+typedef struct
+{
    int width,height;
    int sidewidth;
    int centerwidth;

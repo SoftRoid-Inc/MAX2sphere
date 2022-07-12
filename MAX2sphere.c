@@ -102,16 +102,15 @@ int main(int argc,char **argv)
                // Find face and u,v coordinates given the longitude and latitude
                if ((face = FindFaceUV(longitude,latitude,&uv)) < 0)
                   continue;
-
+               
                // Sum over the supersampling set 
-					c = GetColour(face,uv,frame1,frame2);
-					csum.r += c.r;
+					// c = GetColour(face,uv,frame1,frame2);
+               c = GetColour(face, uv, frame1, frame2);
+               csum.r += c.r;
                csum.g += c.g;
                csum.b += c.b;
             }
          }
-
-         // Finally update the spherical image
          index = j * params.outwidth + i; 
          spherical[index].r = csum.r / params.antialias2;
          spherical[index].g = csum.g / params.antialias2;
@@ -397,7 +396,7 @@ BITMAP4 GetColour(int face,UV uv,BITMAP4 *frame1,BITMAP4 *frame2)
 		ix = x0 + uv.u * w;
 		iy = uv.v * template[whichtemplate].height;
 		index = iy * template[whichtemplate].width + ix;
-		c = (face == FRONT) ? frame1[index] : frame2[index];
+      c = (face == FRONT) ? frame1[index] : frame2[index];
 		break;
    case LEFT:
 	case DOWN:
