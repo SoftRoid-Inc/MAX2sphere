@@ -5,7 +5,8 @@
         Sept 08: First version based upon cube2sphere
         Sept 10: Added output file mask
 */
-
+// 高速化について
+// https://www.notion.so/softroid/MAX2sphere-b899aae68c11426682e8dc494751ecaf
 PARAMS params;
 
 // These are known frame templates
@@ -13,6 +14,8 @@ PARAMS params;
 #define NTEMPLATE 2
 // #define TABLEPATH "./precalc.bin"
 
+//対応可能な360画像のサイズは以下の2種類 
+//4096×1344か2272×736以外の場合は、以下のtemplateに追記が必要
 FRAMESPECS template[NTEMPLATE] = {{4096, 1344, 1376, 1344, 32, 5376},
                                   {2272, 736, 768, 736, 16, 2944}};
 int whichtemplate = -1;  // Which frame template do we thnk we have
@@ -49,9 +52,9 @@ int main(int argc, char **argv) {
         } else if (strcmp(argv[i], "-d") == 0) {
             params.debug = TRUE;
         } else if (strcmp(argv[i], "-r") == 0) {
-            strcpy(params.read, argv[i + 1]);
+            strcpy(params.readprecalctable, argv[i + 1]);
         } else if (strcmp(argv[i], "-m") == 0){
-            params.memorize = TRUE;
+            params.writeprecalctable = TRUE;
         }
     }
     // Check the input images, determine which frame template we have
@@ -90,26 +93,29 @@ int main(int argc, char **argv) {
     if (params.debug) fprintf(stderr, "%s() - Creating spherical map\n", argv[0]);
     starttime = GetRunTime();
 
+    // 360画像のサイズに変更があった場合は、arr_readの要素数に変更が必要
     // staticで宣言することで、使用可能なメモリが多い静的領域として使用
-    static FUV arr_read[2688][5376][4];
+    static FUV arr_read[2688][5376][4]; //TODO: 要素数を変数で指定できるように変更
+    int unreadable = 0;// 360画像のサイズが4096×1344でない場合に1となる変数
     if(whichtemplate!=0){
         fprintf(stderr,"Size doesn't match with Pre-calculation table\n");
+        unreadable=1;
     }
 
     // テーブルの読み込み
     FILE *fpread;
-    if(strlen(params.read)>0){
-        if ((fpread = fopen(params.read, "rb")) == NULL)
+    if(strlen(params.readprecalctable)>0){
+        if ((fpread = fopen(params.readprecalctable, "rb")) == NULL)
         {
             fprintf(stderr,
-                    "CheckPrecalculationFile() - Failed to open binfile \"%s\"\n",
-                    params.read);
+                    "CheckPrecalculationFile() - Failed to open binfile \"%s\"\n",//binファイルが読み込めない時に出力
+                    params.readprecalctable);
             return (-1);
         }
-        else if (fread(arr_read, sizeof(FUV), 2688 * 5376 * 4, fpread) < 2688 * 5376 * 4)
+        else if (fread(arr_read, sizeof(FUV), 2688 * 5376 * 4, fpread) < 2688 * 5376 * 4)//360画像のサイズに応じて変更が必要
         {
             fprintf(stderr,
-                    "binfile is broken() - mismatch size \n");
+                    "binfile is broken() - mismatch size \n");//binファイルを読み込んだが、メモリなどの原因で読み込んだ配列が小さい時に出力
             return (-1);
         }
         fclose(fpread);
@@ -131,13 +137,13 @@ int main(int argc, char **argv) {
                             (double)params.outheight -
                         0.5;  // -0.5 ... 0.5
                     int antinum = ai * params.antialias + aj;
-                    if(strlen(params.read)==0){
+                    if(strlen(params.readprecalctable)==0 || unreadable==1){
                         longitude = x * TWOPI - M_PI;  // -pi ... pi
                         latitude = y * M_PI;           // -pi/2 ... pi/2
                         if ((face = FindFaceUV(longitude, latitude, &uv)) < 0)
                             continue;
                         // テーブルを作成するためのコード
-                        if(params.memorize){
+                        if(params.writeprecalctable){
                             arr_read[j][i][antinum].u = uv.u;
                             arr_read[j][i][antinum].v = uv.v;
                             arr_read[j][i][antinum].face = face;
@@ -162,7 +168,7 @@ int main(int argc, char **argv) {
         }
     }
     stoptime = GetRunTime();
-    if(params.memorize){
+    if(params.writeprecalctable){
         fprintf(stderr, "%s() - Writing Pre-calculation table\n", argv[0]);
         FILE *fp = fopen("newprecalc.bin", "wb");
         fwrite(arr_read, sizeof(FUV), 2688 * 5376 * 4, fp);
