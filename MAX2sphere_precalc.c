@@ -5,7 +5,8 @@
         Sept 08: First version based upon cube2sphere
         Sept 10: Added output file mask
 */
-
+// 高速化について
+// https://www.notion.so/softroid/MAX2sphere-b899aae68c11426682e8dc494751ecaf
 PARAMS params;
 
 // These are known frame templates
