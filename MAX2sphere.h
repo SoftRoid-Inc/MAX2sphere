@@ -32,8 +32,8 @@ typedef struct {
    PLANE faces[6];
 	char outfilename[256];
    int debug;
-   char read[256];
-   int memorize;
+   char readprecalctable[256];
+   int writeprecalctable;
 } PARAMS;
 typedef struct {
    int face;
