@@ -75,9 +75,9 @@ int main(int argc, char **argv) {
 
     DIR *dir;
     struct dirent *dp;
-    char dirpath1[] = "./test/track0";
-    char dirpath2[] = "./test/track5";
-    const char outdir[] = "./test/er";
+    char dirpath1[] = "../../8/130/2022/04/27/02:34:31.000000/prepro/images/track0";
+    char dirpath2[] = "../../8/130/2022/04/27/02:34:31.000000/prepro/images/track5";
+    const char outdir[] = "../../8/130/2022/04/27/02:34:31.000000/prepro/images/er";
     dir = opendir(dirpath1);
     if (dir == NULL) {
         return 1;
@@ -194,9 +194,9 @@ int main(int argc, char **argv) {
         //     fprintf(stderr, "%s() - Writing equirectangular\n",argv[0]);
         WriteSpherical(fname3, spherical, params.outwidth, params.outheight);
         // fprintf(stderr,"%d\n",cnti);
-// #pragma omp atomic
-//         total+=1;
-//         fprintf(stderr, "\r[%d / 5]", total);     
+#pragma omp atomic
+        total+=1;
+        fprintf(stderr, "\r[%d / 5]", total);     
         free(frame1);
         free(frame2);
         free(spherical);   
