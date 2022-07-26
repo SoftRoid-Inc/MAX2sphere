@@ -11,10 +11,10 @@ OBJS_test = testc.o bitmaplib.o
 all: MAX2sphere_precalc MAX2sphere
 
 MAX2sphere_precalc: $(OBJS_precalc)
-	$(CC) $(INCLUDES) $(CFLAGS) -o MAX2sphere_precalc $(OBJS_precalc) $(LFLAGS) $(LIBS)
+	$(CC) $(INCLUDES) -fopenmp $(CFLAGS) -o MAX2sphere_precalc $(OBJS_precalc) $(LFLAGS) $(LIBS)
 
 MAX2sphere_precalc.o: MAX2sphere_precalc.c MAX2sphere.h
-	$(CC) $(INCLUDES) $(CFLAGS) -c MAX2sphere_precalc.c
+	$(CC) $(INCLUDES) -fopenmp $(CFLAGS) -c MAX2sphere_precalc.c
  
 bitmaplib.o: bitmaplib.c bitmaplib.h
 	$(CC) $(INCLUDES) $(CFLAGS) -c bitmaplib.c

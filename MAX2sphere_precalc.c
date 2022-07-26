@@ -1,4 +1,11 @@
+#include <dirent.h>
+#include <omp.h>
+#include <unistd.h>
+
 #include "MAX2sphere.h"
+#define PATHNAME_SIZE 512
+#define ER_HEIGHT 2688
+#define ER_WIDTH 5376
 
 /*
         Convert a pair of frames from the GoPro Max camera to an equirectangular
@@ -14,32 +21,19 @@ PARAMS params;
 #define NTEMPLATE 2
 // #define TABLEPATH "./precalc.bin"
 
-//対応可能な360画像のサイズは以下の2種類 
-//4096×1344か2272×736以外の場合は、以下のtemplateに追記が必要
+//対応可能な360画像のサイズは以下の2種類
+// 4096×1344か2272×736以外の場合は、以下のtemplateに追記が必要
 FRAMESPECS template[NTEMPLATE] = {{4096, 1344, 1376, 1344, 32, 5376},
                                   {2272, 736, 768, 736, 16, 2944}};
 int whichtemplate = -1;  // Which frame template do we thnk we have
 
 int main(int argc, char **argv) {
-    int i, j, index, face, aj, ai;
-    char fname1[256], fname2[256];
-    double x, y, longitude, latitude;
-    UV uv;
-    COLOUR16 csum, czero = {0, 0, 0};
-    BITMAP4 c;
-    double starttime, stoptime = 0;
-    double starttime1, stoptime1 = 0;
-
-    // Memory for images, 2 input frames and one output equirectangular
-    BITMAP4 *frame1 = NULL, *frame2 = NULL, *spherical = NULL;
-
-    // Default settings
-    starttime1 = GetRunTime();
+    // テーブルの読み込み
     Init();
+    static FUV arr_read[ER_HEIGHT][ER_WIDTH][4];
+    // TODO: 要素数を変数で指定できるように変更
 
-    // Check and parse command line
-    if (argc < 3) GiveUsage(argv[0]);
-    for (i = 1; i < argc - 1; i++) {
+    for (int i = 1; i < argc - 1; i++) {
         if (strcmp(argv[i], "-w") == 0) {
             params.outwidth = atoi(argv[i + 1]);
             params.outwidth = 4 * (params.outwidth / 4);  // Make factor of 4
@@ -48,147 +42,187 @@ int main(int argc, char **argv) {
             params.antialias = MAX(1, atoi(argv[i + 1]));
             params.antialias2 = params.antialias * params.antialias;
         } else if (strcmp(argv[i], "-o") == 0) {
-            strcpy(params.outfilename, argv[i + 1]);
+            strcpy(params.outdirname, argv[i + 1]);
         } else if (strcmp(argv[i], "-d") == 0) {
             params.debug = TRUE;
         } else if (strcmp(argv[i], "-r") == 0) {
             strcpy(params.readprecalctable, argv[i + 1]);
-        } else if (strcmp(argv[i], "-m") == 0){
+        } else if (strcmp(argv[i], "-m") == 0) {
             params.writeprecalctable = TRUE;
         }
     }
-    // Check the input images, determine which frame template we have
-    strcpy(fname1, argv[argc - 2]);
-    strcpy(fname2, argv[argc - 1]);
-    if ((whichtemplate = CheckFrames(fname1, fname2, &params.framewidth,
-                                     &params.frameheight)) < 0)
-        exit(-1);
-    if (params.debug) {
-        fprintf(stderr, "%s() - frame dimensions: %d x %d\n", argv[0],
-                params.framewidth, params.frameheight);
-        fprintf(stderr, "%s() - Expect frame template %d\n", argv[0],
-                whichtemplate + 1);
-    }
-
-    // Malloc images
-    frame1 = Create_Bitmap(params.framewidth, params.frameheight);
-    frame2 = Create_Bitmap(params.framewidth, params.frameheight);
-    if (params.outwidth < 0) {
-        params.outwidth = template[whichtemplate].equiwidth;
-        params.outheight = params.outwidth / 2;
-    }
-    spherical = Create_Bitmap(params.outwidth, params.outheight);
-    if (frame1 == NULL || frame2 == NULL || spherical == NULL) {
-        fprintf(stderr, "%s() - Failed to malloc memory for the images\n",
-                argv[0]);
-        exit(-1);
-    }
-
-    // Read both frames
-    if (!ReadFrame(frame1, fname1, params.framewidth, params.frameheight))
-        exit(-1);
-    if (!ReadFrame(frame2, fname2, params.framewidth, params.frameheight))
-        exit(-1);
-        // Form the spherical map
-    if (params.debug) fprintf(stderr, "%s() - Creating spherical map\n", argv[0]);
-    starttime = GetRunTime();
-
-    // 360画像のサイズに変更があった場合は、arr_readの要素数に変更が必要
-    // staticで宣言することで、使用可能なメモリが多い静的領域として使用
-    static FUV arr_read[2688][5376][4]; //TODO: 要素数を変数で指定できるように変更
-    int unreadable = 0;// 360画像のサイズが4096×1344でない場合に1となる変数
-    if(whichtemplate!=0){
-        fprintf(stderr,"Size doesn't match with Pre-calculation table\n");
-        unreadable=1;
-    }
-
-    // テーブルの読み込み
+    char dirpath1[256], dirpath2[256], outdir[256];
+    strcpy(dirpath1, argv[argc - 2]);
+    strcpy(dirpath2, argv[argc - 1]);
+    strcpy(outdir, params.outdirname);
     FILE *fpread;
-    if(strlen(params.readprecalctable)>0){
-        if ((fpread = fopen(params.readprecalctable, "rb")) == NULL)
-        {
+    if (strlen(params.readprecalctable) > 0) {
+        if ((fpread = fopen(params.readprecalctable, "rb")) == NULL) {
             fprintf(stderr,
-                    "CheckPrecalculationFile() - Failed to open binfile \"%s\"\n",//binファイルが読み込めない時に出力
+                    "CheckPrecalculationFile() - Failed to open binfile "
+                    "\"%s\"\n",  // binファイルが読み込めない時に出力
                     params.readprecalctable);
             return (-1);
-        }
-        else if (fread(arr_read, sizeof(FUV), 2688 * 5376 * 4, fpread) < 2688 * 5376 * 4)//360画像のサイズに応じて変更が必要
+        } else if (fread(arr_read, sizeof(FUV), ER_HEIGHT * ER_WIDTH * 4,
+                         fpread) != ER_HEIGHT * ER_WIDTH *
+                                        4)  // 360画像のサイズに応じて変更が必要
         {
-            fprintf(stderr,
-                    "binfile is broken() - mismatch size \n");//binファイルを読み込んだが、メモリなどの原因で読み込んだ配列が小さい時に出力
+            fprintf(
+                stderr,
+                "binfile is broken() - mismatch size \n");  // binファイルを読み込んだが、メモリなどの原因で読み込んだ配列が小さい時に出力
             return (-1);
         }
         fclose(fpread);
     }
-    
-    for (j = 0; j < params.outheight; j++) {
-        if (params.debug && j % (params.outheight / 32) == 0)
-            fprintf(stderr, "%s() - Scan line %d\n", argv[0], j);
-        for (i = 0; i < params.outwidth; i++) {
-            csum = czero;  // Supersampling antialising sum
+    int numfiles = CountFiles(dirpath1);
+    fprintf(stdout, "%d\n", numfiles);
 
-            // Antialiasing loops
-            //    printf("%d", params.antialias);
-            for (ai = 0; ai < params.antialias; ai++) {
-                x = (i + ai / (double)params.antialias) /
-                    (double)params.outwidth;  // 0 ... 1
-                for (aj = 0; aj < params.antialias; aj++) {
-                    y = (j + aj / (double)params.antialias) /
-                            (double)params.outheight -
-                        0.5;  // -0.5 ... 0.5
-                    int antinum = ai * params.antialias + aj;
-                    if(strlen(params.readprecalctable)==0 || unreadable==1){
-                        longitude = x * TWOPI - M_PI;  // -pi ... pi
-                        latitude = y * M_PI;           // -pi/2 ... pi/2
-                        if ((face = FindFaceUV(longitude, latitude, &uv)) < 0)
-                            continue;
-                        // テーブルを作成するためのコード
-                        if(params.writeprecalctable){
-                            arr_read[j][i][antinum].u = uv.u;
-                            arr_read[j][i][antinum].v = uv.v;
-                            arr_read[j][i][antinum].face = face;
-                        }
-                        
-                    }else{
-                        face = arr_read[j][i][antinum].face;
-                        uv.u = (double)arr_read[j][i][antinum].u;
-                        uv.v = (double)arr_read[j][i][antinum].v;
-                    }
-                    c = GetColour(face, uv, frame1, frame2);
-                    csum.r += c.r;
-                    csum.g += c.g;
-                    csum.b += c.b;
-                }
-            }
-            // Finally update the spherical image
-            index = j * params.outwidth + i;
-            spherical[index].r = csum.r / params.antialias2;
-            spherical[index].g = csum.g / params.antialias2;
-            spherical[index].b = csum.b / params.antialias2;
+    DIR *dir;
+    dir = opendir(dirpath1);
+    if (dir == NULL) {
+        return 1;
+    }
+
+    struct dirent *dp;
+    // char dirpath1[] = "test/track0";
+    // char dirpath2[] = "test/track5";
+
+    // dp = readdir(dir);
+    char pathname[PATHNAME_SIZE];
+    memset(pathname, '\0', PATHNAME_SIZE);
+    if (getcwd(pathname, PATHNAME_SIZE) == NULL) {
+        fprintf(stderr, "fail to getcwd");
+    };
+    // fprintf(stdout, "現在のファイルパス:%s\n", pathname);
+    dp = readdir(dir);
+    // char pathlist[5000][256];
+    char(*pathlist)[256];
+    pathlist = malloc(numfiles * 256 * sizeof(char));
+    dp = readdir(dir);
+    int cnt = 0;
+    for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
+        char fname[256];
+        strcpy(fname, dp->d_name);
+        if (strlen(fname) < 3) {
+            continue;
         }
+        strcpy(pathlist[cnt], fname);
+        cnt += 1;
     }
-    stoptime = GetRunTime();
-    if(params.writeprecalctable){
-        fprintf(stderr, "%s() - Writing Pre-calculation table\n", argv[0]);
-        FILE *fp = fopen("newprecalc.bin", "wb");
-        fwrite(arr_read, sizeof(FUV), 2688 * 5376 * 4, fp);
-        fclose(fp);
-    }
-    
-    if (params.debug)
-        fprintf(stderr, "%s() - Processing time: %g seconds\n", argv[0],
-                stoptime - starttime);
+    // for (int i = 0; i < 50; ++i) fprintf(stdout, "%s\n", pathlist[i]);
+    int total = 0;
+#pragma omp parallel for
+    for (int cnti = 0; cnti < numfiles; cnti++) {
+        char fname[256];
+        int unreadable =
+            0;  // 360画像のサイズが4096×1344でない場合に1となる変数
+        strcpy(fname, pathlist[cnti]);
+        char fname1[512], fname2[512], fname3[512];
+        sprintf(fname1, "%s/%s", dirpath1, fname);
+        sprintf(fname2, "%s/%s", dirpath2, fname);
+        sprintf(fname3, "%s/%s", outdir, fname);
 
-    // Write out the equirectangular
-    // Base the name on the name of the first frame
-    if (params.debug)
-        fprintf(stderr, "%s() - Writing equirectangular\n", argv[0]);
-    WriteSpherical(fname1, spherical, params.outwidth, params.outheight);
-    stoptime1 = GetRunTime();
-    if (params.debug)
-        fprintf(stderr, "%s() - Overall time: %g seconds\n", argv[0],
-                stoptime1 - starttime1);
-    
+        // fprintf(stdout, "%s", str3);
+        int i, j, index, face, aj, ai;
+        double x, y, longitude, latitude;
+        UV uv;
+        COLOUR16 csum, czero = {0, 0, 0};
+        BITMAP4 c;
+        BITMAP4 *frame1 = NULL, *frame2 = NULL, *spherical = NULL;
+        // Malloc images
+        // fprintf(stdout, "%s\n", outdir);
+        if ((whichtemplate = CheckFrames(fname1, fname2, &params.framewidth,
+                                         &params.frameheight)) < 0)
+            continue;
+        if (whichtemplate != 0) {
+            fprintf(stderr, "Size doesn't match with Pre-calculation table\n");
+            unreadable = 1;
+        }
+        frame1 = Create_Bitmap(params.framewidth, params.frameheight);
+        frame2 = Create_Bitmap(params.framewidth, params.frameheight);
+        if (params.outwidth < 0) {
+            params.outwidth = template[whichtemplate].equiwidth;
+            params.outheight = params.outwidth / 2;
+        }
+        spherical = Create_Bitmap(params.outwidth, params.outheight);
+        // if (frame1 == NULL || frame2 == NULL || spherical == NULL) {
+        //     fprintf(stderr, "%s() - Failed to malloc memory for the
+        //     images\n",argv[0]); exit(-1);
+        // }
+        if (!ReadFrame(frame1, fname1, params.framewidth, params.frameheight))
+            exit(-1);
+        if (!ReadFrame(frame2, fname2, params.framewidth, params.frameheight))
+            exit(-1);
+        // fprintf(stdout, "%s\n", outdir);
+
+        // Form the spherical map
+        for (j = 0; j < params.outheight; j++) {
+            // if (params.debug && j % (params.outheight / 32) == 0)
+            //     fprintf(stderr, "%s() - Scan line %d\n", argv[0],j);
+            for (i = 0; i < params.outwidth; i++) {
+                csum = czero;  // Supersampling antialising sum
+
+                // Antialiasing loops
+                // printf("%d", params.antialias);
+                for (ai = 0; ai < params.antialias; ai++) {
+                    x = (i + ai / (double)params.antialias) /
+                        (double)params.outwidth;  // 0 ... 1
+                    for (aj = 0; aj < params.antialias; aj++) {
+                        y = (j + aj / (double)params.antialias) /
+                                (double)params.outheight -
+                            0.5;  // -0.5 ... 0.5
+                        int antinum = ai * params.antialias + aj;
+                        if (strlen(params.readprecalctable) == 0 ||
+                            unreadable == 1) {
+                            longitude = x * TWOPI - M_PI;  // -pi ...pi
+                            latitude = y * M_PI;           //-pi/2 ... pi/2
+                            if ((face = FindFaceUV(longitude, latitude, &uv)) <
+                                0)
+                                continue;
+                            // テーブルを作成するためのコード
+                            if (params.writeprecalctable) {
+                                arr_read[j][i][antinum].u = uv.u;
+                                arr_read[j][i][antinum].v = uv.v;
+                                arr_read[j][i][antinum].face = face;
+                            }
+
+                        } else {
+                            face = arr_read[j][i][antinum].face;
+                            uv.u = (double)arr_read[j][i][antinum].u;
+                            uv.v = (double)arr_read[j][i][antinum].v;
+                        }
+                        c = GetColour(face, uv, frame1, frame2);
+                        csum.r += c.r;
+                        csum.g += c.g;
+                        csum.b += c.b;
+                    }
+                }
+                // Finally update the spherical image
+                index = j * params.outwidth + i;
+                spherical[index].r = csum.r / params.antialias2;
+                spherical[index].g = csum.g / params.antialias2;
+                spherical[index].b = csum.b / params.antialias2;
+            }
+        }
+        if (params.writeprecalctable && total == 0) {
+            fprintf(stderr, "%s() - Writing Pre-calculation table\n", argv[0]);
+            FILE *fp = fopen("newprecalc.bin", "wb");
+            fwrite(arr_read, sizeof(FUV), 2688 * 5376 * 4, fp);
+            fclose(fp);
+        }
+
+        if (params.debug)
+            fprintf(stderr, "%s() - Writing equirectangular\n", argv[0]);
+        WriteSpherical(fname3, spherical, params.outwidth, params.outheight);
+        // fprintf(stderr,"%d\n",cnti);
+#pragma omp atomic
+        total += 1;
+        fprintf(stderr, "\r[%d / %d]", total, numfiles);
+        free(frame1);
+        free(frame2);
+        free(spherical);
+    }
+    closedir(dir);
     exit(0);
 }
 
@@ -260,34 +294,33 @@ int CheckFrames(char *fname1, char *fname2, int *width, int *height) {
    provided
 */
 int WriteSpherical(char *basename, BITMAP4 *img, int w, int h) {
-    int i;
+    long unsigned int i,numidx = 0;
     FILE *fptr;
-    char fname[256];
+    char filename[1024],filepath[1024];
 
-    // Create the output file name
-    if (strlen(params.outfilename) < 1) {
-        strcpy(fname, basename);
-        for (i = strlen(fname) - 1; i > 0; i--) {
-            if (fname[i] == '.') {
-                fname[i] = '\0';
-                break;
-            }
+    strcpy(filename, basename);
+    for (i = strlen(filename) - 1; i > 0; i--) {
+        if (filename[i] == '_') {
+            numidx = i;
+            break;
         }
-        strcat(fname, "_sphere.jpg");
-    } else {
-        strcpy(fname, params.outfilename);
+    }
+    char imgid[128];
+    strncpy(imgid, filename + numidx, strlen(filename) - numidx+1);
+    sprintf(filepath, "%s/%s%s", params.outdirname, "er_frame",imgid);
+    if(params.debug){
+        fprintf(stdout,"%s\n",filepath);
     }
 
-    // Save
-    if ((fptr = fopen(fname, "wb")) == NULL) {
+    //Save
+    if ((fptr = fopen(filename, "wb")) == NULL) {
         fprintf(stderr,
                 "WriteSpherical() - Failed to open output file \"%s\"\n",
-                fname);
+                filename);
         return (FALSE);
     }
     JPEG_Write(fptr, img, w, h, 100);
     fclose(fptr);
-
     return (TRUE);
 }
 
@@ -548,6 +581,23 @@ void RotateUV90(UV *uv) {
     uv->v = NEARLYONE - tmp.u;
 }
 
+int CountFiles(char *dirpath) {
+    DIR *dir;
+    dir = opendir(dirpath);
+    if (dir == NULL) {
+        return 1;
+    }
+    struct dirent *dp;
+    dp = readdir(dir);
+    int cnt = 0;
+    for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
+        if (strlen(dp->d_name) < 3) {
+            continue;
+        }
+        cnt += 1;
+    }
+    return cnt;
+}
 /*
         Initialise parameters structure
 */
@@ -621,7 +671,9 @@ void GiveUsage(char *s) {
             "   -o s      specify the output filename, default is based on "
             "track0 name\n");
     fprintf(stderr, "   -d        enable debug mode, default: off\n");
-    fprintf(stderr, "   -r        enable read pre-calculation mode and specify table path\n");
+    fprintf(stderr,
+            "   -r        enable read pre-calculation mode and specify table "
+            "path\n");
     fprintf(stderr, "   -m        memorize calculation mode, default: off\n");
     exit(-1);
 }
