@@ -31,6 +31,7 @@ typedef struct {
    int antialias,antialias2;  
    PLANE faces[6];
 	char outfilename[256];
+   char outdirname[246];
    int debug;
    char readprecalctable[256];
    int writeprecalctable;
@@ -51,6 +52,7 @@ typedef struct
 
 // Prototypes
 int CheckFrames(char *,char *,int *,int *);
+int CountFiles(char *);
 int WriteSpherical(char *,BITMAP4 *,int,int);
 int ReadFrame(BITMAP4 *,char *,int,int);
 int FindFaceUV(double,double,UV *);
