@@ -1,7 +1,7 @@
 #include <dirent.h>
 #include <omp.h>
 #include <unistd.h>
-
+#include <sys/sysinfo.h>
 #include "MAX2sphere.h"
 #define PATHNAME_SIZE 512
 #define ER_HEIGHT 2688
@@ -31,7 +31,6 @@ int main(int argc, char **argv) {
     // テーブルの読み込み
     Init();
     static FUV arr_read[ER_HEIGHT][ER_WIDTH][4];
-    // TODO: 要素数を変数で指定できるように変更
 
     for (int i = 1; i < argc - 1; i++) {
         if (strcmp(argv[i], "-w") == 0) {
@@ -75,7 +74,6 @@ int main(int argc, char **argv) {
         fclose(fpread);
     }
     int numfiles = CountFiles(dirpath1);
-    fprintf(stdout, "%d\n", numfiles);
 
     DIR *dir;
     dir = opendir(dirpath1);
@@ -84,10 +82,6 @@ int main(int argc, char **argv) {
     }
 
     struct dirent *dp;
-    // char dirpath1[] = "test/track0";
-    // char dirpath2[] = "test/track5";
-
-    // dp = readdir(dir);
     char pathname[PATHNAME_SIZE];
     memset(pathname, '\0', PATHNAME_SIZE);
     if (getcwd(pathname, PATHNAME_SIZE) == NULL) {
@@ -95,7 +89,6 @@ int main(int argc, char **argv) {
     };
     // fprintf(stdout, "現在のファイルパス:%s\n", pathname);
     dp = readdir(dir);
-    // char pathlist[5000][256];
     char(*pathlist)[256];
     pathlist = malloc(numfiles * 256 * sizeof(char));
     dp = readdir(dir);
@@ -111,7 +104,9 @@ int main(int argc, char **argv) {
     }
     // for (int i = 0; i < 50; ++i) fprintf(stdout, "%s\n", pathlist[i]);
     int total = 0;
-#pragma omp parallel for
+    int parallelnum=get_nprocs_conf()-1;
+    fprintf(stdout,"OpenMP num_threads: %d\n",parallelnum);
+#pragma omp parallel for num_threads(parallelnum)
     for (int cnti = 0; cnti < numfiles; cnti++) {
         char fname[256];
         int unreadable =
@@ -223,6 +218,7 @@ int main(int argc, char **argv) {
         free(spherical);
     }
     closedir(dir);
+    free(pathlist);
     exit(0);
 }
 
