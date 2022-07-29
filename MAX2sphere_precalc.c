@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
     }
     // for (int i = 0; i < 50; ++i) fprintf(stdout, "%s\n", pathlist[i]);
     int total = 0;
-    int parallelnum=get_nprocs_conf()-1;
+    int parallelnum=get_nprocs_conf()-2;
     fprintf(stdout,"OpenMP num_threads: %d\n",parallelnum);
 #pragma omp parallel for num_threads(parallelnum)
     for (int cnti = 0; cnti < numfiles; cnti++) {
@@ -309,10 +309,10 @@ int WriteSpherical(char *basename, BITMAP4 *img, int w, int h) {
     }
 
     //Save
-    if ((fptr = fopen(filename, "wb")) == NULL) {
+    if ((fptr = fopen(filepath, "wb")) == NULL) {
         fprintf(stderr,
                 "WriteSpherical() - Failed to open output file \"%s\"\n",
-                filename);
+                filepath);
         return (FALSE);
     }
     JPEG_Write(fptr, img, w, h, 100);
