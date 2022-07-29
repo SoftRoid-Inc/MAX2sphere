@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
     }
     // for (int i = 0; i < 50; ++i) fprintf(stdout, "%s\n", pathlist[i]);
     int total = 0;
-    int parallelnum=get_nprocs_conf()-2;
+    int parallelnum=get_nprocs_conf()-10;
     fprintf(stdout,"OpenMP num_threads: %d\n",parallelnum);
 #pragma omp parallel for num_threads(parallelnum)
     for (int cnti = 0; cnti < numfiles; cnti++) {
