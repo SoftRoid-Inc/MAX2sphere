@@ -7,3 +7,7 @@ _site
 images/
 test/
 *.bin
+
+*.o
+MAX2sphere
+MAX2sphere_precalc
