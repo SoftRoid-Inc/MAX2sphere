@@ -18,9 +18,6 @@ MAX2sphere_precalc.o: MAX2sphere_precalc.c MAX2sphere.h
 bitmaplib.o: bitmaplib.c bitmaplib.h
 	$(CC) $(INCLUDES) $(CFLAGS) -c bitmaplib.c
 
-install:
-	cp MAX2sphere MAX2sphere_precalc /usr/local/bin/
-
 clean:
 	rm -rf core MAX2sphere_precalc $(OBJS_precalc)
 	rm -rf core MAX2sphere $(OBJS)
@@ -31,3 +28,5 @@ MAX2sphere: $(OBJS)
 MAX2sphere.o: MAX2sphere.c MAX2sphere.h
 	$(CC) $(INCLUDES) $(CFLAGS) -c MAX2sphere.c
 
+install:
+	cp MAX2sphere MAX2sphere_precalc /usr/local/bin/
