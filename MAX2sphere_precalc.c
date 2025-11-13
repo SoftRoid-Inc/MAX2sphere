@@ -11,13 +11,14 @@ PARAMS params;
 
 // These are known frame templates
 // The appropaite one to use will be auto detected, error is none match
-#define NTEMPLATE 2
+#define NTEMPLATE 3
 // #define TABLEPATH "./precalc.bin"
 
-//対応可能な360画像のサイズは以下の2種類 
-//4096×1344か2272×736以外の場合は、以下のtemplateに追記が必要
+//対応可能な360画像のサイズは以下の3種類
+//4096×1344, 2272×736, 5888×1920(GoPro Max 2)以外の場合は、以下のtemplateに追記が必要
 FRAMESPECS template[NTEMPLATE] = {{4096, 1344, 1376, 1344, 32, 5376},
-                                  {2272, 736, 768, 736, 16, 2944}};
+                                  {2272, 736, 768, 736, 16, 2944},
+                                  {5888, 1920, 1984, 1920, 64, 8192}};
 int whichtemplate = -1;  // Which frame template do we thnk we have
 
 int main(int argc, char **argv) {
@@ -93,32 +94,41 @@ int main(int argc, char **argv) {
     if (params.debug) fprintf(stderr, "%s() - Creating spherical map\n", argv[0]);
     starttime = GetRunTime();
 
-    // 360画像のサイズに変更があった場合は、arr_readの要素数に変更が必要
-    // staticで宣言することで、使用可能なメモリが多い静的領域として使用
-    static FUV arr_read[2688][5376][4]; //TODO: 要素数を変数で指定できるように変更
-    int unreadable = 0;// 360画像のサイズが4096×1344でない場合に1となる変数
-    if(whichtemplate!=0){
-        fprintf(stderr,"Size doesn't match with Pre-calculation table\n");
-        unreadable=1;
+    // 360画像のサイズに応じて動的にテーブルを確保
+    // 各テンプレートのサイズ: outheight * outwidth * antialias^2
+    size_t table_size = params.outheight * params.outwidth * params.antialias2;
+    if (params.debug) {
+        fprintf(stderr, "%s() - Table dimensions: %d x %d x %d = %zu entries\n",
+                argv[0], params.outwidth, params.outheight, params.antialias2, table_size);
+    }
+    FUV *arr_read = (FUV *)malloc(table_size * sizeof(FUV));
+    if (arr_read == NULL) {
+        fprintf(stderr, "%s() - Failed to malloc memory for precalc table\n", argv[0]);
+        exit(-1);
     }
 
     // テーブルの読み込み
     FILE *fpread;
+    int table_loaded = 0;
     if(strlen(params.readprecalctable)>0){
         if ((fpread = fopen(params.readprecalctable, "rb")) == NULL)
         {
             fprintf(stderr,
                     "CheckPrecalculationFile() - Failed to open binfile \"%s\"\n",//binファイルが読み込めない時に出力
                     params.readprecalctable);
+            free(arr_read);
             return (-1);
         }
-        else if (fread(arr_read, sizeof(FUV), 2688 * 5376 * 4, fpread) < 2688 * 5376 * 4)//360画像のサイズに応じて変更が必要
+        else if (fread(arr_read, sizeof(FUV), table_size, fpread) < table_size)//360画像のサイズに応じて変更が必要
         {
             fprintf(stderr,
-                    "binfile is broken() - mismatch size \n");//binファイルを読み込んだが、メモリなどの原因で読み込んだ配列が小さい時に出力
+                    "binfile is broken() - mismatch size (expected %zu entries)\n", table_size);//binファイルを読み込んだが、メモリなどの原因で読み込んだ配列が小さい時に出力
+            fclose(fpread);
+            free(arr_read);
             return (-1);
         }
         fclose(fpread);
+        table_loaded = 1;
     }
     
     for (j = 0; j < params.outheight; j++) {
@@ -137,22 +147,25 @@ int main(int argc, char **argv) {
                             (double)params.outheight -
                         0.5;  // -0.5 ... 0.5
                     int antinum = ai * params.antialias + aj;
-                    if(strlen(params.readprecalctable)==0 || unreadable==1){
+                    // Calculate 1D index: (j * width + i) * antialias2 + antinum
+                    size_t arr_index = ((size_t)j * params.outwidth + i) * params.antialias2 + antinum;
+
+                    if(!table_loaded){
                         longitude = x * TWOPI - M_PI;  // -pi ... pi
                         latitude = y * M_PI;           // -pi/2 ... pi/2
                         if ((face = FindFaceUV(longitude, latitude, &uv)) < 0)
                             continue;
                         // テーブルを作成するためのコード
                         if(params.writeprecalctable){
-                            arr_read[j][i][antinum].u = uv.u;
-                            arr_read[j][i][antinum].v = uv.v;
-                            arr_read[j][i][antinum].face = face;
+                            arr_read[arr_index].u = uv.u;
+                            arr_read[arr_index].v = uv.v;
+                            arr_read[arr_index].face = face;
                         }
-                        
+
                     }else{
-                        face = arr_read[j][i][antinum].face;
-                        uv.u = (double)arr_read[j][i][antinum].u;
-                        uv.v = (double)arr_read[j][i][antinum].v;
+                        face = arr_read[arr_index].face;
+                        uv.u = (double)arr_read[arr_index].u;
+                        uv.v = (double)arr_read[arr_index].v;
                     }
                     c = GetColour(face, uv, frame1, frame2);
                     csum.r += c.r;
@@ -169,26 +182,59 @@ int main(int argc, char **argv) {
     }
     stoptime = GetRunTime();
     if(params.writeprecalctable){
-        fprintf(stderr, "%s() - Writing Pre-calculation table\n", argv[0]);
-        FILE *fp = fopen("newprecalc.bin", "wb");
-        fwrite(arr_read, sizeof(FUV), 2688 * 5376 * 4, fp);
+        fprintf(stderr, "%s() - Writing Pre-calculation table (template %d, %zu entries, %.2f MB)\n",
+                argv[0], whichtemplate, table_size, (table_size * sizeof(FUV)) / (1024.0 * 1024.0));
+        fprintf(stderr, "%s() - sizeof(FUV) = %zu, total bytes = %zu\n",
+                argv[0], sizeof(FUV), table_size * sizeof(FUV));
+        FILE *fp = fopen(params.outfilename, "wb");
+        if (fp == NULL) {
+            fprintf(stderr, "%s() - Failed to open output file for precalc table\n", argv[0]);
+            free(arr_read);
+            exit(-1);
+        }
+        fprintf(stderr, "%s() - Calling fwrite with %zu entries...\n", argv[0], table_size);
+        size_t written = fwrite(arr_read, sizeof(FUV), table_size, fp);
+        fprintf(stderr, "%s() - fwrite returned %zu\n", argv[0], written);
+        if (ferror(fp)) {
+            fprintf(stderr, "%s() - ERROR: ferror indicates write error!\n", argv[0]);
+        }
+        fflush(fp);
+        long file_pos = ftell(fp);
+        fprintf(stderr, "%s() - File position after write: %ld bytes\n", argv[0], file_pos);
         fclose(fp);
+        if (written != table_size) {
+            fprintf(stderr, "%s() - WARNING: Only wrote %zu of %zu entries (%.2f%%)!\n",
+                    argv[0], written, table_size, 100.0 * written / table_size);
+        } else {
+            fprintf(stderr, "%s() - Precalc table written to %s\n", argv[0], params.outfilename);
+        }
     }
     
     if (params.debug)
         fprintf(stderr, "%s() - Processing time: %g seconds\n", argv[0],
                 stoptime - starttime);
 
-    // Write out the equirectangular
+    // Write out the equirectangular (skip if generating precalc table)
     // Base the name on the name of the first frame
-    if (params.debug)
-        fprintf(stderr, "%s() - Writing equirectangular\n", argv[0]);
-    WriteSpherical(fname1, spherical, params.outwidth, params.outheight);
+    fprintf(stderr, "%s() - writeprecalctable = %d\n", argv[0], params.writeprecalctable);
+    if (!params.writeprecalctable) {
+        if (params.debug)
+            fprintf(stderr, "%s() - Writing equirectangular\n", argv[0]);
+        WriteSpherical(fname1, spherical, params.outwidth, params.outheight);
+    } else {
+        fprintf(stderr, "%s() - Skipping equirectangular (generating precalc table)\n", argv[0]);
+    }
     stoptime1 = GetRunTime();
     if (params.debug)
         fprintf(stderr, "%s() - Overall time: %g seconds\n", argv[0],
                 stoptime1 - starttime1);
-    
+
+    // Cleanup
+    free(arr_read);
+    free(frame1);
+    free(frame2);
+    free(spherical);
+
     exit(0);
 }
 
