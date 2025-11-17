@@ -18,7 +18,7 @@ PARAMS params;
 //4096×1344, 2272×736, 5888×1920(GoPro Max 2)以外の場合は、以下のtemplateに追記が必要
 FRAMESPECS template[NTEMPLATE] = {{4096, 1344, 1376, 1344, 32, 5376},
                                   {2272, 736, 768, 736, 16, 2944},
-                                  {5888, 1920, 1984, 1920, 64, 8192}};
+                                  {5888, 1920, 1984, 1920, 32, 7680}};
 int whichtemplate = -1;  // Which frame template do we thnk we have
 
 int main(int argc, char **argv) {
